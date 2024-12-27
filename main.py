@@ -1,6 +1,7 @@
 import numpy as np
 import math
 import matplotlib.pyplot as plt
+#import roboticstoolbox as rtb
 
 class SE2Transform:
     @staticmethod
@@ -229,6 +230,27 @@ class RobotArm:
 
         return traj_joint
 
+# Configuração do robô e visualização
+def visualize_trajectory(trajectory, filename='RR.gif'):
+    # Criar o robô usando a convenção DH da toolbox
+    robot = rtb.models.DH.Planar2()
+
+    # Gerar as trajetórias das juntas
+    joint_trajectories = trajectory
+
+    # Combinar as trajetórias das juntas em uma matriz para visualização
+    nb_steps = len(joint_trajectories)
+    print(nb_steps)
+    qt = np.zeros((nb_steps, 2))
+    for i in range(nb_steps):
+        qt[i, :] = [joint_trajectories[i][0], joint_trajectories[i][1]]
+
+    print(qt)
+
+    # Visualizar a trajetória no espaço das juntas
+    robot.plot(qt, backend='pyplot', movie=filename)
+    print(f'Trajetória salva em: {filename}')
+
 def plot(trajectory, ts, filename):
     time_steps = [i * ts for i in range(len(trajectory))]
 
@@ -271,7 +293,7 @@ def plot(trajectory, ts, filename):
     plt.close()
 
 def main():
-    arm = RobotArm(a1=1, a2=1, max_vel=0.1, max_acc=0.005, timestamp=0.01)
+    arm = RobotArm(a1=1, a2=1, max_vel=2, max_acc=0.75, timestamp=0.01)
     
     # print("--------- Tests part 1 ---------")
     # p = np.array([0.5, 0.5, 1])
@@ -306,7 +328,9 @@ def main():
 
     print("--------- Tests: traj_eucl ---------")
     trajectory_eucl = arm.traj_eucl(0, 1, 1, 0)
-    print(trajectory_eucl)
+    # print(trajectory_eucl)
+
+    #visualize_trajectory(trajectory_eucl, filename='RR.gif')
 
 if __name__ == '__main__':
     main()
