@@ -3,6 +3,10 @@ from transforms import SE2Transform
 from visualization import visualize_trajectory, plot
 import math
 import numpy as np
+import os
+
+PLOTS_DIR = "plots"
+os.makedirs(PLOTS_DIR, exist_ok=True)
 
 def main():
     arm = RobotArm(a1=1, a2=1, max_vel=2, max_acc=0.75, timestamp=0.01)
@@ -33,12 +37,12 @@ def main():
 
     print("--------- Tests part 3 ---------")
     trajectory = arm.traj_joint(0, 0, 0.5, 3)
-    plot(trajectory[0], arm.trajectory_generator.ts, "traj_joint1")
-    plot(trajectory[1], arm.trajectory_generator.ts, "traj_joint2")
+    plot(trajectory[0], arm.trajectory_generator.ts, os.path.join(PLOTS_DIR, "traj_joint1"))
+    plot(trajectory[1], arm.trajectory_generator.ts, os.path.join(PLOTS_DIR, "traj_joint2"))
 
     print("--------- Tests: traj_eucl ---------")
     trajectory_eucl = arm.traj_eucl(0, 1, 1, 0)
-    visualize_trajectory(trajectory_eucl, filename='RR.gif')
+    visualize_trajectory(trajectory_eucl, filename=os.path.join(PLOTS_DIR, 'RR.gif'))
 
 if __name__ == '__main__':
     main()
