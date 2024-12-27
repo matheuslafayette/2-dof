@@ -1,7 +1,7 @@
 import numpy as np
 import math
 import matplotlib.pyplot as plt
-#import roboticstoolbox as rtb
+import roboticstoolbox as rtb
 
 class SE2Transform:
     @staticmethod
@@ -63,6 +63,7 @@ class RobotArm:
 
         return solutions
 
+    #another class
     def triangle_traj(self, theta_init, theta_final, target_time=None):
         delta_target = abs(theta_final - theta_init)
         move_sign = 1 if theta_final >= theta_init else -1
@@ -95,6 +96,7 @@ class RobotArm:
 
         return trajectory, 2 * T_pico
     
+    #another class
     def trapezoid_traj(self, theta_init, theta_final, target_time=None):
         delta_target = abs(theta_final - theta_init)
         move_sign = 1 if theta_final >= theta_init else -1
@@ -133,6 +135,7 @@ class RobotArm:
 
         return trajectory, T_total
 
+    #
     def single_traj(self, theta_init, theta_final, target_time=None):
 
         T_vmax = (self.max_vel)/(self.max_acc) # time to reach max vel
@@ -161,6 +164,7 @@ class RobotArm:
             # traj_type = "Trapezoid"
             return trajectory, T_total
 
+    #stay in this class
     def traj_joint(self, theta1_init, theta2_init, theta1_final, theta2_final):
         delta1 = abs(theta1_final - theta1_init)
         delta2 = abs(theta2_final - theta2_init)
@@ -179,6 +183,7 @@ class RobotArm:
 
             return [smallest_traj, biggest_traj]
     
+    #stay in this class
     def proj_into_workspace(self, x, y):
         if math.hypot(x, y) <= (self.a1 + self.a2) and math.hypot(x, y) >= abs(self.a1 - self.a2):
             return x, y
@@ -195,7 +200,8 @@ class RobotArm:
         new_x = new_r*math.cos(theta)
         new_y = new_r*math.sin(theta)
         return new_x, new_y
- 
+    
+    #stay in this class
     def traj_eucl(self, x_init, y_init, x_final, y_final):
         x_init, y_init = self.proj_into_workspace(x_init, y_init)
         x_final, y_final = self.proj_into_workspace(x_final, y_final)
@@ -295,42 +301,41 @@ def plot(trajectory, ts, filename):
 def main():
     arm = RobotArm(a1=1, a2=1, max_vel=2, max_acc=0.75, timestamp=0.01)
     
-    # print("--------- Tests part 1 ---------")
-    # p = np.array([0.5, 0.5, 1])
-    # print("Test 1: ", (SE2Transform.xy(1, 0.25) @ p)[:2])
-    # print("Test 2: ", (SE2Transform.xy(-1, -0.25) @ p)[:2])
-    # print("Test 3: ", (SE2Transform.xy(1, 0.25) @ SE2Transform.theta(math.radians(45)) @ p)[:2])
-    # print("Test 4: ", (np.linalg.inv(SE2Transform.xy(1, 0.25) @ SE2Transform.theta(math.radians(45))) @ p)[:2])
-    
-    # print("--------- Tests: FK ---------")
-    # print("Test 1: ", arm.fk(0, math.pi/2))
-    # print("Test 2: ", arm.fk(math.pi/2, math.pi/2))
-    # print("Test 3: ", arm.fk(math.pi/2, -math.pi/2))
-    # print("Test 4: ", arm.fk(-math.pi, math.pi))
-    
-    # print("--------- Tests: IK ---------")
-    # print("Test 1: ", arm.ik(1, 1))
-    # print("Test 2: ", arm.ik(1, -1))
-    # print("Test 3: ", arm.ik(-1, 1))
-    # print("Test 4: ", arm.ik(-1, -1))
-    # print("Test 5: ", arm.ik(2, 1))
-    # print("Test 6: ", arm.ik(2, 0))
-    # print("Test 7: ", arm.ik(0, 2))
-    # print("Test 8: ", arm.ik(-2, 0))
+    print("--------- Tests part 1 ---------")
+    p = np.array([0.5, 0.5, 1])
+    print("Test 1: ", (SE2Transform.xy(1, 0.25) @ p)[:2])
+    print("Test 2: ", (SE2Transform.xy(-1, -0.25) @ p)[:2])
+    print("Test 3: ", (SE2Transform.xy(1, 0.25) @ SE2Transform.theta(math.radians(45)) @ p)[:2])
+    print("Test 4: ", (np.linalg.inv(SE2Transform.xy(1, 0.25) @ SE2Transform.theta(math.radians(45))) @ p)[:2])
 
-    # trajectory_trapezoid = arm.traj_joint(2, 5, 0.5, 1)
-    # # print(trajectory_trapezoid)
-    # # trajectory_triangle = arm.traj_joint(0.0, 1.0, 0.0, 1.0)
-    # # print(trajectory_triangle)
 
-    # plot(trajectory_trapezoid[0], arm.ts, "traj_joint1")
-    # plot(trajectory_trapezoid[1], arm.ts, "traj_joint2")
+    print("--------- Tests part 2 ---------")
+    print("--------- Tests: FK ---------")
+    print("Test 1: ", arm.fk(0, math.pi/2))
+    print("Test 2: ", arm.fk(math.pi/2, math.pi/2))
+    print("Test 3: ", arm.fk(math.pi/2, -math.pi/2))
+    print("Test 4: ", arm.fk(-math.pi, math.pi))
+    
+    print("--------- Tests: IK ---------")
+    print("Test 1: ", arm.ik(1, 1))
+    print("Test 2: ", arm.ik(1, -1))
+    print("Test 3: ", arm.ik(-1, 1))
+    print("Test 4: ", arm.ik(-1, -1))
+    print("Test 5: ", arm.ik(2, 1))
+    print("Test 6: ", arm.ik(2, 0))
+    print("Test 7: ", arm.ik(0, 2))
+    print("Test 8: ", arm.ik(-2, 0))
+
+
+    print("--------- Tests part 3 ---------")
+    trajectory = arm.traj_joint(0, 0, 0.5, 3)
+    plot(trajectory[0], arm.ts, "traj_joint1")
+    plot(trajectory[1], arm.ts, "traj_joint2")
 
     print("--------- Tests: traj_eucl ---------")
     trajectory_eucl = arm.traj_eucl(0, 1, 1, 0)
-    # print(trajectory_eucl)
 
-    #visualize_trajectory(trajectory_eucl, filename='RR.gif')
+    visualize_trajectory(trajectory_eucl, filename='RR.gif')
 
 if __name__ == '__main__':
     main()
