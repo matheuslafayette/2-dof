@@ -50,7 +50,7 @@ class RobotArm:
         k2 = self.a2 * math.sin(theta2)
 
         theta1 = math.atan2(y, x) - math.atan2(k2, k1)
-        solutions.append([math.degrees(theta1), math.degrees(theta2)])
+        solutions.append([theta1, theta2])
 
         if math.hypot(x, y) == (self.a1 + self.a2) or math.hypot(x, y) == abs(self.a1 - self.a2):
             return solutions
@@ -58,7 +58,7 @@ class RobotArm:
         theta2_alt = -theta2
         k2_alt = self.a2 * math.sin(theta2_alt)
         theta1_alt = math.atan2(y, x) - math.atan2(k2_alt, k1)
-        solutions.append([math.degrees(theta1_alt), math.degrees(theta2_alt)])
+        solutions.append([theta1_alt, theta2_alt])
 
         return solutions
 
@@ -150,7 +150,7 @@ class RobotArm:
         if target_time is None:
             return trajectory, T_total
         
-        # Choose beteween triangle and trapezoid based on target Time
+        # Choose between triangle and trapezoid based on target Time
         if T_total >= (2 * delta_target) / self.max_vel:
             trajectory, T_total = self.triangle_traj(theta_init, theta_final, target_time=target_time)
             # traj_type = "Triangle"
@@ -182,78 +182,92 @@ class RobotArm:
         if math.hypot(x, y) <= (self.a1 + self.a2) and math.hypot(x, y) >= abs(self.a1 - self.a2):
             return x, y
         
-        #Convertion into polar coordinates
-        theta = math.tan2(y, x)
+        #convert to polar coordinates
+        theta = math.atan2(y, x)
 
         if math.hypot(x, y) > (self.a1 + self.a2):
             new_r = self.a1 + self.a2
         if math.hypot(x, y) < abs(self.a1 - self.a2):
             new_r = abs(self.a1 - self.a2)
         
-        #Convertion back into carthesian coordinates
+        #convert back into cartesian coordinates
         new_x = new_r*math.cos(theta)
         new_y = new_r*math.sin(theta)
         return new_x, new_y
-    
+ 
     def traj_eucl(self, x_init, y_init, x_final, y_final):
         x_init, y_init = self.proj_into_workspace(x_init, y_init)
         x_final, y_final = self.proj_into_workspace(x_final, y_final)
         
-        delta1 = abs(x_final - x_init)
-        delta2 = abs(y_final - y_init)
+        delta_x = abs(x_final - x_init)
+        delta_y = abs(y_final - y_init)
 
-        biggest_delta = 1 if delta1 > delta2 else 2
+        biggest_delta = 1 if delta_x > delta_y else 2
 
-        if (biggest_delta == 1):
+        traj_euclidean = []
+
+        if biggest_delta == 1:
             biggest_traj, total_time = self.single_traj(x_init, x_final)
             smallest_traj, total_time = self.single_traj(y_init, y_final, target_time=total_time)
 
-            return [biggest_traj, smallest_traj]
+            traj_euclidean = [biggest_traj, smallest_traj]
         else:
             biggest_traj, total_time = self.single_traj(y_init, y_final)
             smallest_traj, total_time = self.single_traj(x_init, x_final, target_time=total_time)
 
-            return [smallest_traj, biggest_traj]
+            traj_euclidean = [smallest_traj, biggest_traj]
+        
+        traj_joint = []
+
+        # Convert to joint angles
+        for i in range(len(traj_euclidean[0])):
+            xi, yi = self.proj_into_workspace(traj_euclidean[0][i], traj_euclidean[1][i])
+            ik_solutions = self.ik(xi, yi)
+            if ik_solutions:
+                theta1, theta2 = ik_solutions[0]
+                traj_joint.append([theta1, theta2])
+
+        return traj_joint
 
 def plot(trajectory, ts, filename):
     time_steps = [i * ts for i in range(len(trajectory))]
 
-    # Velocidade: Derivada da trajetória
+    # vel
     velocity = [(trajectory[i + 1] - trajectory[i]) / ts for i in range(len(trajectory) - 1)]
     time_steps_vel = time_steps[:-1]
 
-    # Aceleração: Derivada da velocidade
+    # acc
     acceleration = [(velocity[i + 1] - velocity[i]) / ts for i in range(len(velocity) - 1)]
     time_steps_acc = time_steps_vel[:-1]
 
-    # Figura 1: Plotando a trajetória
+    # Fig 1: Traj plot
     plt.figure(figsize=(8, 5))
     plt.plot(time_steps, trajectory, marker='o', linestyle='-', linewidth=2, markersize=6)
     plt.title("Trajetória Gerada")
     plt.xlabel("Tempo (s)")
     plt.ylabel("Posição")
     plt.grid(True)
-    plt.savefig(f'{filename}.png')  # Salva o gráfico de trajetória
-    plt.close()  # Fecha a figura para evitar sobreposição
+    plt.savefig(f'{filename}.png')
+    plt.close()
 
-    # Figura 2: Plotando a velocidade
+    # Fig 2: Vel plot
     plt.figure(figsize=(8, 5))
     plt.plot(time_steps_vel, velocity, marker='x', linestyle='-', color='red', linewidth=2)
     plt.title("Velocidade Derivada")
     plt.xlabel("Tempo (s)")
     plt.ylabel("Velocidade")
     plt.grid(True)
-    plt.savefig(f'{filename}_vel.png')  # Salva o gráfico de velocidade
+    plt.savefig(f'{filename}_vel.png')
     plt.close()
 
-    # Figura 3: Plotando a aceleração
+    # Fig 3: Acc plot
     plt.figure(figsize=(8, 5))
     plt.plot(time_steps_acc, acceleration, marker='s', linestyle='-', color='blue', linewidth=2)
     plt.title("Aceleração Derivada")
     plt.xlabel("Tempo (s)")
     plt.ylabel("Aceleração")
     plt.grid(True)
-    plt.savefig(f'{filename}_acc.png')  # Salva o gráfico de aceleração
+    plt.savefig(f'{filename}_acc.png')
     plt.close()
 
 def main():
@@ -289,6 +303,10 @@ def main():
 
     # plot(trajectory_trapezoid[0], arm.ts, "traj_joint1")
     # plot(trajectory_trapezoid[1], arm.ts, "traj_joint2")
+
+    print("--------- Tests: traj_eucl ---------")
+    trajectory_eucl = arm.traj_eucl(0, 1, 1, 0)
+    print(trajectory_eucl)
 
 if __name__ == '__main__':
     main()
